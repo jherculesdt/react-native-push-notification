@@ -27,6 +27,30 @@ public class RNPushNotificationListenerService extends GcmListenerService {
     @Override
     public void onMessageReceived(String from, final Bundle bundle) {
         JSONObject data = getPushData(bundle.getString("data"));
+
+        //If not gcm standard push notification
+        if ( !bundle.containsKey("notification") ) {
+
+            //Carnival sends messages over "alert" string property
+            if ( bundle.containsKey("alert") ) {
+                Bundle notificationBundle = new Bundle();
+                notificationBundle.putString("body", bundle.getString("alert"));
+
+                bundle.putBundle("notification", notificationBundle);
+            } else if ( bundle.containsKey("sendbird") ) {
+                //Sendbird only sends a "sendbird" object containing channel and message information
+                Bundle notificationBundle = new Bundle();
+                notificationBundle.putString("body", "Message received");
+
+                bundle.putBundle("notification", notificationBundle);
+                bundle.putString("data", bundle.getString("sendbird"));
+            }
+        }
+
+        if ( bundle.containsKey("notification") && !bundle.containsKey("message") ) {
+            bundle.putString("message", bundle.getBundle("notification").getString("body"));
+        }
+
         if (data != null) {
             if (!bundle.containsKey("message")) {
                 bundle.putString("message", data.optString("alert", "Notification received"));
